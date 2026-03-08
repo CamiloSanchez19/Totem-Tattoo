@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libzip-dev \
     libonig-dev \
     libxml2-dev \
-    && docker-php-ext-install pdo_mysql mbstring zip \
+    && docker-php-ext-install pdo_mysql mbstring zip bcmath pcntl xml \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
@@ -19,7 +19,8 @@ WORKDIR /app
 COPY . .
 
 # Install PHP deps (optimized for production)
-RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+# --no-scripts avoids running artisan hooks during image build when runtime env is not available yet.
+RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts
 
 # Ensure storage/bootstrap cache are writable
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
@@ -27,4 +28,4 @@ RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framewor
     && chmod -R 775 storage bootstrap/cache
 
 # Render injects PORT env var
-CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php artisan migrate --force && php -S 0.0.0.0:${PORT} -t public"]
+CMD ["sh", "-c", "php artisan package:discover --ansi && php artisan config:cache && php artisan route:cache && php artisan migrate --force && php -S 0.0.0.0:${PORT} -t public"]
