@@ -4377,7 +4377,7 @@ img{
 /* 🟢 Tablets */
 @media (max-width: 1024px) {
   .video-slide {
-    height: 92vh;
+    height: 89vh;
     min-height: 500px;
   }
 }
@@ -4385,7 +4385,7 @@ img{
 /* 🔵 Móviles */
 @media (max-width: 768px) {
   .video-slide {
-    height: 92vh;
+    height: 89vh;
     min-height: 420px;
   }
 
@@ -4394,7 +4394,7 @@ img{
 /* 🔴 Móviles pequeños */
 @media (max-width: 480px) {
   .video-slide {
-    height: 92vh;
+    height: 89vh;
     min-height: 360px;
 
 }
