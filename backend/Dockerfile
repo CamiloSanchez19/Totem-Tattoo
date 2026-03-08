@@ -27,5 +27,6 @@ RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framewor
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Render injects PORT env var
-CMD ["sh", "-c", "php artisan package:discover --ansi && php artisan config:cache && php artisan route:cache && php -S 0.0.0.0:${PORT} -t public"]
+# Render injects PORT env var.
+# If RUN_DB_SETUP=true, startup will run migrations + seed once per deploy.
+CMD ["sh", "-c", "php artisan package:discover --ansi && php artisan config:cache && php artisan route:cache && if [ \"${RUN_DB_SETUP}\" = \"true\" ]; then php artisan migrate --force && php artisan db:seed --force; fi && php -S 0.0.0.0:${PORT} -t public"]
