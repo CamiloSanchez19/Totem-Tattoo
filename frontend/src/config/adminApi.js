@@ -6,12 +6,20 @@ const isLocalHost =
   typeof window !== 'undefined'
   && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
+const envApiBaseUrl = import.meta.env.VITE_API_BASE_URL
+
 const DEFAULT_API_BASE_URL = isLocalHost
   ? 'http://127.0.0.1:8000/api'
   : 'https://totem-tattoo.onrender.com/api'
 
+const isLocalApiUrl = (value) => /localhost|127\.0\.0\.1/i.test(String(value || ''))
+
+const API_BASE_URL = (!isLocalHost && isLocalApiUrl(envApiBaseUrl))
+  ? 'https://totem-tattoo.onrender.com/api'
+  : (envApiBaseUrl || DEFAULT_API_BASE_URL)
+
 const adminApi = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL,
+  baseURL: API_BASE_URL,
   timeout: 15000,
 })
 
