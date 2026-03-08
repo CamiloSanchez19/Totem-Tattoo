@@ -28,4 +28,4 @@ RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framewor
     && chmod -R 775 storage bootstrap/cache
 
 # Render injects PORT env var
-CMD ["sh", "-c", "php artisan package:discover --ansi && php artisan config:cache && php artisan route:cache && php artisan migrate --force && php -S 0.0.0.0:${PORT} -t public"]
+CMD ["sh", "-c", "php artisan package:discover --ansi && php artisan config:cache && php artisan route:cache && php -S 0.0.0.0:${PORT} -t public"]
