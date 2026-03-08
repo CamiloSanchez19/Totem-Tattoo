@@ -1,16 +1,28 @@
 
 
 
-# Totem — Documentación del proyecto
+# Totem - Documentacion del proyecto
 
 Proyecto full stack con frontend en React (Vite) y backend API en Laravel.
 
 ## 1) Estructura del repositorio
 
-- `frontend/`: aplicación React para web pública (portafolio, reservas, productos, checkout) y panel admin.
-- `backend/`: API REST en Laravel para autenticación admin, catálogo, reservas, compras y ventas.
+- `frontend/`: aplicacion React para sitio publico y panel admin.
+- `backend/`: API REST en Laravel para autenticacion admin, catalogo, reservas, compras y ventas.
 
-## 2) Tecnologías
+## 2) Arquitectura de servidores (produccion)
+
+- Frontend: Vercel
+- Backend API: Render (Web Service con Docker)
+- Base de datos: Railway (MySQL)
+
+Flujo:
+
+1. Usuario entra al frontend en Vercel.
+2. Frontend consume endpoints `/api` del backend en Render.
+3. Backend se conecta a MySQL en Railway por variables de entorno.
+
+## 3) Tecnologias
 
 ### Frontend
 - React 19
@@ -25,7 +37,7 @@ Proyecto full stack con frontend en React (Vite) y backend API en Laravel.
 - MySQL
 - Pest (testing)
 
-## 3) Requisitos
+## 4) Requisitos para desarrollo local
 
 - Node.js 20+
 - npm 10+
@@ -33,58 +45,115 @@ Proyecto full stack con frontend en React (Vite) y backend API en Laravel.
 - Composer 2+
 - MySQL 8+
 
-## 4) Configuración rápida (primera vez)
+## 5) Configuracion rapida (primera vez)
 
 ### Backend
-1. Ir a `backend/`
-2. Instalar dependencias: `composer install`
-3. Copiar env: `copy .env.example .env` (si no existe)
-4. Generar key: `php artisan key:generate`
-5. Configurar base de datos en `.env`
-6. Ejecutar migraciones y seeders:
-   - `php artisan migrate`
-   - `php artisan db:seed`
+
+```bash
+cd backend
+composer install
+copy .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan db:seed
+```
 
 ### Frontend
-1. Ir a `frontend/`
-2. Instalar dependencias: `npm install`
-3. Verificar `.env` con:
-   - `VITE_API_BASE_URL=http://127.0.0.1:8000/api`
 
-## 5) Cómo ejecutar el proyecto (desarrollo)
+```bash
+cd frontend
+npm install
+```
 
-Usar 2 terminales.
+Configurar `frontend/.env`:
 
-### Terminal 1 (backend)
+```dotenv
+VITE_API_BASE_URL=http://127.0.0.1:8000/api
+```
+
+## 6) Ejecucion local
+
+Backend:
+
 ```bash
 cd backend
 php -S 127.0.0.1:8000 -t public
 ```
 
-### Terminal 2 (frontend)
+Frontend:
+
 ```bash
 cd frontend
 npm run dev
 ```
 
-Abrir la URL que muestra Vite (normalmente `http://127.0.0.1:5173`).
+Abrir la URL de Vite (normalmente `http://127.0.0.1:5173`).
 
-## 6) Usuario admin inicial
+## 7) Variables de entorno en produccion
 
-Se crea desde `DatabaseSeeder`:
+### Vercel (Frontend)
+
+- `VITE_API_BASE_URL=https://TU_BACKEND_RENDER.onrender.com/api`
+
+### Render (Backend)
+
+- `APP_ENV=production`
+- `APP_DEBUG=false`
+- `APP_URL=https://TU_BACKEND_RENDER.onrender.com`
+- `APP_KEY=base64:...`
+- `CORS_ALLOWED_ORIGINS=https://TU_FRONTEND_VERCEL.vercel.app`
+- `DB_CONNECTION=mysql`
+- `DB_HOST=...` (Railway)
+- `DB_PORT=3306`
+- `DB_DATABASE=...`
+- `DB_USERNAME=...`
+- `DB_PASSWORD=...`
+
+Recomendado en Render:
+
+- `SESSION_DRIVER=file`
+- `CACHE_STORE=file`
+- `QUEUE_CONNECTION=sync`
+- `LOG_CHANNEL=stderr`
+
+## 8) Despliegue del backend en Render
+
+Crear un `Web Service` con:
+
+- Runtime: `Docker`
+- Root Directory: `backend`
+- Dockerfile Path: `Dockerfile`
+
+El repositorio ya incluye:
+
+- `backend/Dockerfile`
+- `backend/.dockerignore`
+
+## 9) Base de datos en Railway
+
+1. Crear servicio MySQL en Railway.
+2. Copiar credenciales (`host`, `port`, `database`, `user`, `password`).
+3. Cargar esas credenciales en variables de entorno de Render.
+4. Ejecutar migraciones/seed en deploy (`php artisan migrate --force` y opcional `php artisan db:seed --force`).
+
+## 10) Usuario admin inicial
+
+Se crea desde `backend/database/seeders/DatabaseSeeder.php`:
 
 - Email: `admin@totem.local`
 - Password: `Totem2026*`
 
-## 7) Calidad y pruebas
+## 11) Calidad y pruebas
 
-### Frontend
-- Lint + build: `npm run quality`
+Frontend:
 
-### Backend
-- Tests: `composer quality`
+- `npm run quality`
 
-## 8) Documentación detallada
+Backend:
+
+- `composer quality`
+
+## 12) Documentacion detallada
 
 - Backend: `backend/README.md`
 - Frontend: `frontend/README.md`
