@@ -39,13 +39,18 @@ class ProductController extends Controller
             'categoria' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string'],
             'imagen' => ['nullable', 'image', 'max:4096'],
+            'imagen_url' => ['nullable', 'url', 'max:2048'],
             'imagen_actual' => ['nullable', 'string', 'max:2048'],
             'precio' => ['required', 'numeric', 'min:0.01'],
             'stock' => ['required', 'integer', 'min:0'],
             'activo' => ['nullable', 'boolean'],
         ]);
 
-        $imagePath = $this->resolveImagePathFromRequest($request, $validated['imagen_actual'] ?? null);
+        $imagePath = $this->resolveImagePathFromRequest(
+            $request,
+            $validated['imagen_actual'] ?? null,
+            $validated['imagen_url'] ?? null
+        );
 
         $product = Product::query()->create([
             'nombre' => $validated['nombre'],
@@ -75,15 +80,20 @@ class ProductController extends Controller
             'categoria' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string'],
             'imagen' => ['nullable', 'image', 'max:4096'],
+            'imagen_url' => ['nullable', 'url', 'max:2048'],
             'imagen_actual' => ['nullable', 'string', 'max:2048'],
             'precio' => ['required', 'numeric', 'min:0.01'],
             'stock' => ['required', 'integer', 'min:0'],
             'activo' => ['nullable', 'boolean'],
         ]);
 
-        $imagePath = $this->resolveImagePathFromRequest($request, $validated['imagen_actual'] ?? $product->imagen);
+        $imagePath = $this->resolveImagePathFromRequest(
+            $request,
+            $validated['imagen_actual'] ?? $product->imagen,
+            $validated['imagen_url'] ?? null
+        );
 
-        if ($request->hasFile('imagen') && $this->isStoredPublicPath($product->imagen)) {
+        if (($request->hasFile('imagen') || !empty($validated['imagen_url'])) && $this->isStoredPublicPath($product->imagen)) {
             Storage::disk('public')->delete($product->imagen);
         }
 
@@ -133,10 +143,14 @@ class ProductController extends Controller
         ];
     }
 
-    private function resolveImagePathFromRequest(Request $request, ?string $fallbackImage): ?string
+    private function resolveImagePathFromRequest(Request $request, ?string $fallbackImage, ?string $imageUrl): ?string
     {
         if ($request->hasFile('imagen')) {
             return $request->file('imagen')->store('productos', 'public');
+        }
+
+        if ($imageUrl) {
+            return $imageUrl;
         }
 
         return $fallbackImage;

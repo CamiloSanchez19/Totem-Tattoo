@@ -46,6 +46,7 @@ const INITIAL_PRODUCT_FORM = {
   categoria: 'Aftercare',
   descripcion: '',
   imagenActual: '',
+  imagenUrl: '',
   precio: '',
   stock: '',
   activo: true,
@@ -68,6 +69,9 @@ const INITIAL_PURCHASE_FORM = {
   estado: 'Pendiente',
   detalle: '',
 }
+
+const MAX_PRODUCT_IMAGE_BYTES = 4 * 1024 * 1024
+const ALLOWED_PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 function formatDateTime(value) {
   if (!value) return '-'
@@ -175,6 +179,7 @@ function AdminDashboard() {
   const [productForm, setProductForm] = useState(INITIAL_PRODUCT_FORM)
   const [productImageFile, setProductImageFile] = useState(null)
   const [productImagePreview, setProductImagePreview] = useState('')
+  const [productImageSource, setProductImageSource] = useState('file')
   const [editingProductId, setEditingProductId] = useState(null)
   const [productSearch, setProductSearch] = useState('')
 
@@ -315,6 +320,7 @@ function AdminDashboard() {
     setProductForm(INITIAL_PRODUCT_FORM)
     setProductImageFile(null)
     setProductImagePreview('')
+    setProductImageSource('file')
     setEditingProductId(null)
   }
 
@@ -338,15 +344,54 @@ function AdminDashboard() {
 
   const onProductImageChange = (event) => {
     const file = event.target.files?.[0] || null
-    setProductImageFile(file)
+    setProductImageSource('file')
 
     if (!file) {
+      setProductImageFile(null)
+      setProductImagePreview(productForm.imagenActual || productForm.imagenUrl || '')
+      return
+    }
+
+    if (!ALLOWED_PRODUCT_IMAGE_TYPES.includes(file.type)) {
+      showToast('Formato no permitido. Usa JPG, PNG o WEBP.', 'warning', 2600)
+      event.target.value = ''
+      setProductImageFile(null)
       setProductImagePreview(productForm.imagenActual || '')
       return
     }
 
+    if (file.size > MAX_PRODUCT_IMAGE_BYTES) {
+      showToast('La imagen supera 4 MB. Elige una imagen más liviana.', 'warning', 2800)
+      event.target.value = ''
+      setProductImageFile(null)
+      setProductImagePreview(productForm.imagenActual || '')
+      return
+    }
+
+    setProductImageFile(file)
+
     const previewUrl = URL.createObjectURL(file)
     setProductImagePreview(previewUrl)
+  }
+
+  const onProductImageUrlChange = (event) => {
+    const imageUrl = event.target.value
+    setProductImageSource('url')
+    setProductImageFile(null)
+    setProductForm((current) => ({
+      ...current,
+      imagenUrl: imageUrl,
+    }))
+    setProductImagePreview(imageUrl.trim())
+  }
+
+  const isValidHttpUrl = (value) => {
+    try {
+      const url = new URL(value)
+      return url.protocol === 'http:' || url.protocol === 'https:'
+    } catch {
+      return false
+    }
   }
 
   const onReservationFormChange = (event) => {
@@ -394,8 +439,17 @@ function AdminDashboard() {
     formData.append('stock', String(payload.stock))
     formData.append('activo', payload.activo ? '1' : '0')
 
-    if (productImageFile) {
+    const imageUrl = productForm.imagenUrl.trim()
+
+    if (productImageSource === 'url' && imageUrl && !isValidHttpUrl(imageUrl)) {
+      showToast('La URL de imagen no es válida. Debe iniciar por http:// o https://', 'warning', 3000)
+      return
+    }
+
+    if (productImageSource === 'file' && productImageFile) {
       formData.append('imagen', productImageFile)
+    } else if (productImageSource === 'url' && imageUrl) {
+      formData.append('imagen_url', imageUrl)
     } else if (productForm.imagenActual) {
       formData.append('imagen_actual', productForm.imagenActual)
     }
@@ -420,17 +474,21 @@ function AdminDashboard() {
   }
 
   const handleProductEdit = (product) => {
+    const isExternalImage = /^https?:\/\//i.test(product.imagen || '')
+
     setEditingProductId(product.id)
     setProductForm({
       nombre: product.nombre,
       categoria: product.categoria,
       descripcion: product.descripcion || '',
       imagenActual: product.imagen || '',
+      imagenUrl: isExternalImage ? (product.imagen || '') : '',
       precio: String(product.precio),
       stock: String(product.stock),
       activo: product.activo,
     })
     setProductImageFile(null)
+    setProductImageSource(isExternalImage ? 'url' : 'file')
     setProductImagePreview(product.imagen || '')
     setActiveView('products')
   }
@@ -977,11 +1035,56 @@ function AdminDashboard() {
                   </div>
                   <div className="form-group">
                     <label htmlFor="imagen">Imagen del producto</label>
+                    <div className="admin-image-source-switch">
+                      <label>
+                        <input
+                          type="radio"
+                          name="imageSource"
+                          value="file"
+                          checked={productImageSource === 'file'}
+                          onChange={() => {
+                            setProductImageSource('file')
+                            setProductImagePreview(productForm.imagenActual || '')
+                          }}
+                        />
+                        Subir archivo
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name="imageSource"
+                          value="url"
+                          checked={productImageSource === 'url'}
+                          onChange={() => {
+                            setProductImageSource('url')
+                            setProductImageFile(null)
+                            setProductImagePreview(productForm.imagenUrl.trim() || productForm.imagenActual || '')
+                          }}
+                        />
+                        Usar URL
+                      </label>
+                    </div>
                     <div className="admin-image-upload">
-                      <input id="imagen" name="imagen" type="file" accept="image/*" onChange={onProductImageChange} />
-                      <small className="admin-image-upload-help">Selecciona una imagen desde este ordenador (JPG, PNG o WEBP).</small>
-                      {productImageFile && (
-                        <p className="admin-image-upload-filename">Archivo seleccionado: {productImageFile.name}</p>
+                      {productImageSource === 'file' ? (
+                        <>
+                          <input id="imagen" name="imagen" type="file" accept="image/*" onChange={onProductImageChange} />
+                          <small className="admin-image-upload-help">Selecciona una imagen desde este ordenador. Formatos: JPG, PNG o WEBP. Tamaño máximo: 4 MB.</small>
+                          {productImageFile && (
+                            <p className="admin-image-upload-filename">Archivo seleccionado: {productImageFile.name}</p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <input
+                            id="imagenUrl"
+                            name="imagenUrl"
+                            type="url"
+                            placeholder="https://..."
+                            value={productForm.imagenUrl}
+                            onChange={onProductImageUrlChange}
+                          />
+                          <small className="admin-image-upload-help">Pega una URL pública válida (http:// o https://).</small>
+                        </>
                       )}
                     </div>
                     {productImagePreview && (

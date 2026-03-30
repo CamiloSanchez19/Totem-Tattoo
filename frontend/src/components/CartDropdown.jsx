@@ -49,37 +49,39 @@ function CartDropdown() {
         <span className="total-cart">{getTotalItems()}</span>
       </button>
       {isOpen && (
-        <div className="dropdown-menu pull-right cart-panel" role="menu">
+        <div className="dropdown-menu show pull-right cart-panel" role="menu">
           {cartItems.length === 0 ? (
             <div className="empty-cart">
               <p>Tu carrito está vacío</p>
             </div>
           ) : (
             <>
-              {cartItems.map((item) => (
-                <div key={item.id} className="cart-product">
-                  <div className="inner">
-                    <div className="cross-icon">
-                      <button
-                        onClick={() => handleRemoveFromCart(item.id)}
-                        className="remove-btn"
-                        title="Eliminar del carrito"
-                        aria-label={`Eliminar ${item.name} del carrito`}
-                      >
-                        <span className="icon fa fa-remove"></span>
-                      </button>
+              <div className="cart-panel-items">
+                {cartItems.map((item) => (
+                  <div key={item.id} className="cart-product">
+                    <div className="inner">
+                      <div className="cross-icon">
+                        <button
+                          onClick={() => handleRemoveFromCart(item.id)}
+                          className="remove-btn"
+                          title="Eliminar del carrito"
+                          aria-label={`Eliminar ${item.name} del carrito`}
+                        >
+                          <span className="icon fa fa-remove"></span>
+                        </button>
+                      </div>
+                      <div className="image">
+                        <img src={item.image} alt={item.name} />
+                      </div>
+                      <h3>
+                        <Link to="/productos">{item.name}</Link>
+                      </h3>
+                      <div className="quantity-text">Cantidad: {item.quantity}</div>
+                      <div className="price">{formatCOP(item.price * item.quantity)}</div>
                     </div>
-                    <div className="image">
-                      <img src={item.image} alt={item.name} />
-                    </div>
-                    <h3>
-                      <Link to="/productos">{item.name}</Link>
-                    </h3>
-                    <div className="quantity-text">Cantidad: {item.quantity}</div>
-                    <div className="price">{formatCOP(item.price * item.quantity)}</div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
               <div className="cart-total">
                 Sub Total: <span>{formatCOP(getSubtotal())}</span>
               </div>
