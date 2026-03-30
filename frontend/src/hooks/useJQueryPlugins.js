@@ -37,13 +37,13 @@ const setupDropdownMenu = () => {
   $('.main-header li.dropdown .dropdown-btn').remove()
   $('.main-header li.dropdown').append('<div class="dropdown-btn"><span class="fa fa-angle-down"></span></div>')
   
-  $('.main-header li.dropdown .dropdown-btn').on('click', function(e) {
+  $('.main-header li.dropdown .dropdown-btn').off('click.totemDropdown').on('click.totemDropdown', function(e) {
     e.stopPropagation()
     $(this).prev('ul').slideToggle(500)
     $(this).parent().toggleClass('open')
   })
   
-  $('.main-header .navigation li.dropdown > a').on('click', function(e) {
+  $('.main-header .navigation li.dropdown > a').off('click.totemDropdown').on('click.totemDropdown', function(e) {
     if ($(window).width() <= 991) {
       e.preventDefault()
       $(this).parent().find('ul').slideToggle(500)
@@ -58,36 +58,10 @@ const setupDropdownMenu = () => {
     )
   }
   
-  $(document).on('click', function(e) {
+  $(document).off('click.totemDropdown').on('click.totemDropdown', function(e) {
     if (!$(e.target).closest('.dropdown').length) {
       $('.main-header li.dropdown ul').slideUp(300)
       $('.main-header li.dropdown').removeClass('open')
-    }
-  })
-}
-
-const setupBootstrapDropdowns = () => {
-  // Handle Bootstrap dropdown toggles for cart-box
-  $(document).on('click', '.dropdown-toggle', function(e) {
-    e.preventDefault()
-    e.stopPropagation()
-    const $menu = $(this).next('.dropdown-menu')
-    
-    // Close other dropdowns
-    $('.dropdown-menu').not($menu).slideUp(200)
-    
-    // Toggle current dropdown
-    if ($menu.is(':visible')) {
-      $menu.slideUp(200)
-    } else {
-      $menu.slideDown(200)
-    }
-  })
-  
-  // Close dropdown when clicking outside
-  $(document).on('click', function(e) {
-    if (!$(e.target).closest('.dropdown').length) {
-      $('.dropdown-menu').slideUp(200)
     }
   })
 }
@@ -166,9 +140,9 @@ const setupMobileMenu = () => {
   if (!$mainMenu.length) return
   
   $('.mobile-menu .menu-box .menu-outer').html($mainMenu.html())
-  $('.mobile-nav-toggler').on('click', () => $('body').addClass('mobile-menu-visible'))
-  $('.mobile-menu .menu-backdrop, .mobile-menu .close-btn').on('click', () => $('body').removeClass('mobile-menu-visible'))
-  $('.mobile-menu .navigation li.dropdown .dropdown-btn').on('click', function(e) {
+  $('.mobile-nav-toggler').off('click.totemMobileMenu').on('click.totemMobileMenu', () => $('body').addClass('mobile-menu-visible'))
+  $('.mobile-menu .menu-backdrop, .mobile-menu .close-btn').off('click.totemMobileMenu').on('click.totemMobileMenu', () => $('body').removeClass('mobile-menu-visible'))
+  $('.mobile-menu .navigation li.dropdown .dropdown-btn').off('click.totemMobileMenu').on('click.totemMobileMenu', function(e) {
     e.stopPropagation()
     $(this).prev('ul').slideToggle(500)
     $(this).toggleClass('open')
@@ -177,15 +151,15 @@ const setupMobileMenu = () => {
 
 const setupUIInteractions = () => {
   if ($('.search-box-outer').length) {
-    $('.search-box-outer').on('click', () => $('body').addClass('search-active'))
-    $('.close-search').on('click', () => $('body').removeClass('search-active'))
+    $('.search-box-outer').off('click.totemUi').on('click.totemUi', () => $('body').addClass('search-active'))
+    $('.close-search').off('click.totemUi').on('click.totemUi', () => $('body').removeClass('search-active'))
   }
   
-  $(document).on('keydown', (e) => {
+  $(document).off('keydown.totemUi').on('keydown.totemUi', (e) => {
     if (e.key === 'Escape') $('body').removeClass('search-active')
   })
   
-  $('.scroll-to-target').on('click', function() {
+  $('.scroll-to-target').off('click.totemUi').on('click.totemUi', function() {
     const target = $(this).attr('data-target')
     if (target) $('html, body').animate({ scrollTop: $(target).offset().top }, 1500)
   })
@@ -195,19 +169,19 @@ const cleanupListeners = () => {
   if (!window.$) return
   
   $(window).off('scroll')
-  $(document).off('keydown')
-  $(document).off('click')
-  $('.search-box-outer').off('click')
-  $('.close-search').off('click')
-  $('.scroll-to-target').off('click')
+  $(document).off('keydown.totemUi')
+  $(document).off('click.totemDropdown')
+  $('.search-box-outer').off('click.totemUi')
+  $('.close-search').off('click.totemUi')
+  $('.scroll-to-target').off('click.totemUi')
   $('.filter-tabs .filter').off('click')
-  $('.main-header li.dropdown .dropdown-btn').off('click')
-  $('.main-header .navigation li.dropdown > a').off('click')
+  $('.main-header li.dropdown .dropdown-btn').off('click.totemDropdown')
+  $('.main-header .navigation li.dropdown > a').off('click.totemDropdown')
   $('.main-header .navigation li.dropdown').off('mouseenter mouseleave')
-  $('.mobile-nav-toggler').off('click')
-  $('.mobile-menu .menu-backdrop').off('click')
-  $('.mobile-menu .close-btn').off('click')
-  $('.mobile-menu .navigation li.dropdown .dropdown-btn').off('click')
+  $('.mobile-nav-toggler').off('click.totemMobileMenu')
+  $('.mobile-menu .menu-backdrop').off('click.totemMobileMenu')
+  $('.mobile-menu .close-btn').off('click.totemMobileMenu')
+  $('.mobile-menu .navigation li.dropdown .dropdown-btn').off('click.totemMobileMenu')
 }
 
 export function useJQueryPlugins() {
@@ -216,7 +190,6 @@ export function useJQueryPlugins() {
   useEffect(() => {
     window.scrollTo(0, 0)
     const timer = setTimeout(() => {
-      setupBootstrapDropdowns()
       setupHeaderSticky()
       setupDropdownMenu()
       setupPlugins()

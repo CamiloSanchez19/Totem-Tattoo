@@ -45,7 +45,7 @@ const INITIAL_PRODUCT_FORM = {
   nombre: '',
   categoria: 'Aftercare',
   descripcion: '',
-  imagen: '',
+  imagenActual: '',
   precio: '',
   stock: '',
   activo: true,
@@ -173,6 +173,8 @@ function AdminDashboard() {
   const [sales, setSales] = useState([])
 
   const [productForm, setProductForm] = useState(INITIAL_PRODUCT_FORM)
+  const [productImageFile, setProductImageFile] = useState(null)
+  const [productImagePreview, setProductImagePreview] = useState('')
   const [editingProductId, setEditingProductId] = useState(null)
   const [productSearch, setProductSearch] = useState('')
 
@@ -311,6 +313,8 @@ function AdminDashboard() {
 
   const resetProductForm = () => {
     setProductForm(INITIAL_PRODUCT_FORM)
+    setProductImageFile(null)
+    setProductImagePreview('')
     setEditingProductId(null)
   }
 
@@ -330,6 +334,19 @@ function AdminDashboard() {
       ...current,
       [name]: type === 'checkbox' ? checked : value,
     }))
+  }
+
+  const onProductImageChange = (event) => {
+    const file = event.target.files?.[0] || null
+    setProductImageFile(file)
+
+    if (!file) {
+      setProductImagePreview(productForm.imagenActual || '')
+      return
+    }
+
+    const previewUrl = URL.createObjectURL(file)
+    setProductImagePreview(previewUrl)
   }
 
   const onReservationFormChange = (event) => {
@@ -354,7 +371,6 @@ function AdminDashboard() {
       nombre: productForm.nombre.trim(),
       categoria: productForm.categoria,
       descripcion: productForm.descripcion.trim(),
-      imagen: productForm.imagen.trim(),
       precio: Number(productForm.precio),
       stock: Number(productForm.stock),
       activo: Boolean(productForm.activo),
@@ -370,13 +386,28 @@ function AdminDashboard() {
       return
     }
 
+    const formData = new FormData()
+    formData.append('nombre', payload.nombre)
+    formData.append('categoria', payload.categoria)
+    formData.append('descripcion', payload.descripcion)
+    formData.append('precio', String(payload.precio))
+    formData.append('stock', String(payload.stock))
+    formData.append('activo', payload.activo ? '1' : '0')
+
+    if (productImageFile) {
+      formData.append('imagen', productImageFile)
+    } else if (productForm.imagenActual) {
+      formData.append('imagen_actual', productForm.imagenActual)
+    }
+
     try {
       if (editingProductId) {
-        const updatedProduct = await updateProduct(editingProductId, payload)
+        formData.append('_method', 'PUT')
+        const updatedProduct = await updateProduct(editingProductId, formData)
         setProducts((current) => current.map((item) => (item.id === editingProductId ? updatedProduct : item)))
         showToast('Producto actualizado correctamente', 'success', 2500)
       } else {
-        const createdProduct = await createProduct(payload)
+        const createdProduct = await createProduct(formData)
         setProducts((current) => [createdProduct, ...current])
         showToast('Producto creado correctamente', 'success', 2500)
       }
@@ -394,11 +425,13 @@ function AdminDashboard() {
       nombre: product.nombre,
       categoria: product.categoria,
       descripcion: product.descripcion || '',
-      imagen: product.imagen || '',
+      imagenActual: product.imagen || '',
       precio: String(product.precio),
       stock: String(product.stock),
       activo: product.activo,
     })
+    setProductImageFile(null)
+    setProductImagePreview(product.imagen || '')
     setActiveView('products')
   }
 
@@ -943,8 +976,22 @@ function AdminDashboard() {
                     <input id="descripcion" name="descripcion" value={productForm.descripcion} onChange={onProductFormChange} />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="imagen">URL Imagen</label>
-                    <input id="imagen" name="imagen" value={productForm.imagen} onChange={onProductFormChange} placeholder="https://..." />
+                    <label htmlFor="imagen">Imagen del producto</label>
+                    <div className="admin-image-upload">
+                      <input id="imagen" name="imagen" type="file" accept="image/*" onChange={onProductImageChange} />
+                      <small className="admin-image-upload-help">Selecciona una imagen desde este ordenador (JPG, PNG o WEBP).</small>
+                      {productImageFile && (
+                        <p className="admin-image-upload-filename">Archivo seleccionado: {productImageFile.name}</p>
+                      )}
+                    </div>
+                    {productImagePreview && (
+                      <div className="admin-image-preview">
+                        <img
+                          src={productImagePreview}
+                          alt="Vista previa del producto"
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="form-group">
                     <label htmlFor="precio">Precio (COP)</label>

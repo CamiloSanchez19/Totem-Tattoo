@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -36,17 +38,20 @@ class ProductController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'categoria' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string'],
-            'imagen' => ['nullable', 'string', 'max:2048'],
+            'imagen' => ['nullable', 'image', 'max:4096'],
+            'imagen_actual' => ['nullable', 'string', 'max:2048'],
             'precio' => ['required', 'numeric', 'min:0.01'],
             'stock' => ['required', 'integer', 'min:0'],
             'activo' => ['nullable', 'boolean'],
         ]);
 
+        $imagePath = $this->resolveImagePathFromRequest($request, $validated['imagen_actual'] ?? null);
+
         $product = Product::query()->create([
             'nombre' => $validated['nombre'],
             'categoria' => $validated['categoria'],
             'descripcion' => $validated['descripcion'] ?? null,
-            'imagen' => $validated['imagen'] ?? null,
+            'imagen' => $imagePath,
             'precio' => $validated['precio'],
             'existencias' => $validated['stock'],
             'activo' => $validated['activo'] ?? true,
@@ -69,17 +74,24 @@ class ProductController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'categoria' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string'],
-            'imagen' => ['nullable', 'string', 'max:2048'],
+            'imagen' => ['nullable', 'image', 'max:4096'],
+            'imagen_actual' => ['nullable', 'string', 'max:2048'],
             'precio' => ['required', 'numeric', 'min:0.01'],
             'stock' => ['required', 'integer', 'min:0'],
             'activo' => ['nullable', 'boolean'],
         ]);
 
+        $imagePath = $this->resolveImagePathFromRequest($request, $validated['imagen_actual'] ?? $product->imagen);
+
+        if ($request->hasFile('imagen') && $this->isStoredPublicPath($product->imagen)) {
+            Storage::disk('public')->delete($product->imagen);
+        }
+
         $product->update([
             'nombre' => $validated['nombre'],
             'categoria' => $validated['categoria'],
             'descripcion' => $validated['descripcion'] ?? null,
-            'imagen' => $validated['imagen'] ?? null,
+            'imagen' => $imagePath,
             'precio' => $validated['precio'],
             'existencias' => $validated['stock'],
             'activo' => $validated['activo'] ?? true,
@@ -93,6 +105,10 @@ class ProductController extends Controller
 
     public function destroy(Product $product): JsonResponse
     {
+        if ($this->isStoredPublicPath($product->imagen)) {
+            Storage::disk('public')->delete($product->imagen);
+        }
+
         $product->delete();
 
         return response()->json(['message' => 'Producto eliminado']);
@@ -108,12 +124,43 @@ class ProductController extends Controller
             'nombre' => $product->nombre,
             'categoria' => $product->categoria,
             'descripcion' => $product->descripcion,
-            'imagen' => $product->imagen,
+            'imagen' => $this->resolveImageUrl($product->imagen),
             'precio' => (float) $product->precio,
             'stock' => $product->existencias,
             'activo' => $product->activo,
             'creado_en' => $product->creado_en,
             'actualizado_en' => $product->actualizado_en,
         ];
+    }
+
+    private function resolveImagePathFromRequest(Request $request, ?string $fallbackImage): ?string
+    {
+        if ($request->hasFile('imagen')) {
+            return $request->file('imagen')->store('productos', 'public');
+        }
+
+        return $fallbackImage;
+    }
+
+    private function resolveImageUrl(?string $image): ?string
+    {
+        if (!$image) {
+            return null;
+        }
+
+        if (Str::startsWith($image, ['http://', 'https://', '/'])) {
+            return $image;
+        }
+
+        return Storage::disk('public')->url($image);
+    }
+
+    private function isStoredPublicPath(?string $image): bool
+    {
+        if (!$image) {
+            return false;
+        }
+
+        return !Str::startsWith($image, ['http://', 'https://', '/']);
     }
 }

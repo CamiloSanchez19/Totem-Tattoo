@@ -108,15 +108,21 @@ export async function createPublicSale(payload) {
 
 export async function createProduct(payload) {
   const response = await adminApi.post('/admin/products', payload, {
-    headers: authHeaders(),
+    headers: {
+      ...authHeaders(),
+      'Content-Type': 'multipart/form-data',
+    },
   })
 
   return response.data.data
 }
 
 export async function updateProduct(id, payload) {
-  const response = await adminApi.put(`/admin/products/${id}`, payload, {
-    headers: authHeaders(),
+  const response = await adminApi.post(`/admin/products/${id}`, payload, {
+    headers: {
+      ...authHeaders(),
+      'Content-Type': 'multipart/form-data',
+    },
   })
 
   return response.data.data
